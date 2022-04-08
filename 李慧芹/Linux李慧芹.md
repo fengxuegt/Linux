@@ -913,14 +913,27 @@ FILE *tmpfile(void);
 文件描述符的概念（是一个整型数，是一个结构体数组的下标）
 文件IO的操作：open close read write lseek
 文件IO和标准IO的区别
+举例：传达室大爷跑邮局
+区别：响应速度&吞吐量
+面试：如何使一个程序变快？（其实是吞吐量如何变大）
+提醒：文件IO和标准IO不可混用
+转换：fileno、fdopen
 IO的效率问题
 文件共享
-原子操作
+	面试题：删除文件的第十行
+	补充函数：truncate/ftruncate
+原子操作：不可分割的操作
+	原子：不可分割的最小单位
+	原子操作的作用：解决竞争和冲突
 程序中的重定向：dup、dup2
+	见dup.cpp
 同步：sync fsync fdatasync 
-fcntl
-ioctl
-/dev/fd
+	void sync(void); // 关机的时候
+	int fsync(int fd); // 同步一个文件的cache
+	int fdatasync(int fd); // 只刷数据，不刷亚数据（文件属性等）
+int fcntl(int fd, int cmd, .../* arg */): 文件描述符相关的魔术几乎都来自于该函数
+ioctl(); // 设备相关的内容
+/dev/fd/目录：是一个虚目录，显示的是当前进程的文件描述符信息
 ```
 
 ```
@@ -939,9 +952,83 @@ int open(const char *pathname, int flags, mode_t mode);
 
 
 
+## 文件系统
+
+类似ls的实现，如myls，-a -l -i -n
+
+### 目录和文件
+
+-   获取文件属性
+
+    ```c
+    #include<sys/types.h>
+    #include<sys/stat.h>
+    #include<unistd.h>
+    int stat(const char *pathname, struct stat *statbuf);
+    int fstat(int fd, struct stat *statbuf);
+    int lstat(const char *pathname, struct stat *statbuf);
+    struct stat {
+                   dev_t     st_dev;         /* ID of device containing file */
+                   ino_t     st_ino;         /* Inode number */
+                   mode_t    st_mode;        /* File type and mode //16 bit*/
+                   nlink_t   st_nlink;       /* Number of hard links */
+                   uid_t     st_uid;         /* User ID of owner */
+                   gid_t     st_gid;         /* Group ID of owner */
+                   dev_t     st_rdev;        /* Device ID (if special file) */
+                   off_t     st_size;        /* Total size, in bytes */
+                   blksize_t st_blksize;     /* Block size for filesystem I/O */
+                   blkcnt_t  st_blocks;      /* Number of 512B blocks allocated */
+    };
+    // 见stat.c;那就是使用stat函数获得文件的属性
+    // 空洞文件，见big.cpp ./big /tmp/bigfile
+    // 查看st_mode的宏
+    ```
+
+-   文件访问权限
+
+    ```
+    st_mode是一个16位的位图，用于表示文件类型，文件访问权限，及特殊权限位
+    ```
+
+-   umask
+
+    ```
+    0666 & ～umask
+    可以使用umask命令改变umask的值
+    作用：防止产生权限过松的文件
+    chmod（）函数，用于更改文件权限
+    ```
+
+-   文件权限的更改/管理
+
+    ```
+    chmod
+    fchmod
+    不只是命令，也是函数
+    ```
+
+-   沾住位
+
+    ```
+    t位：最初的使用方式是给一个二进制的可执行命令加上t位，可以将其放入到缓存当中（保留执行的痕迹）下次执行的时候可以更快的执行，但是现在都有缓存的概念了，所以基本不怎么用了，但是/tmp的权限符还是t位的
+    ```
+
+-   文件系统：FAT、UFS
+
+    ```
+    文件系统：文件或数据的存储和管理
+    ```
+
+-   硬链接、符号链接
+
+-   utime
+
+-   目录的创建和销毁
+
+-   更改当前工作路径
+
+### 系统数据文件和信息
 
 
 
-
-
-
+### 进程环境
